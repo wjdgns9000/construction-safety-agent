@@ -56,3 +56,42 @@ jobs:
           git add output/raw/
           git diff --staged --quiet || git commit -m "data: 주간 수집 ${{ steps.date.outputs.value }} (${{ steps.check.outputs.count }}건)"
           git push
+
+      - name: 완료 이메일 발송
+        if: steps.check.outputs.count > 0
+        env:
+          GMAIL_SENDER: ${{ secrets.GMAIL_SENDER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_RECIPIENT: ${{ secrets.GMAIL_RECIPIENT }}
+        run: |
+          python - <<'EOF'
+          import smtplib, os
+          from email.mime.text import MIMEText
+          date = "${{ steps.date.outputs.value }}"
+          count = "${{ steps.check.outputs.count }}"
+          sender = os.environ["GMAIL_SENDER"]
+          password = os.environ["GMAIL_APP_PASSWORD"]
+          recipient = os.environ["GMAIL_RECIPIENT"]
+          body = f"""안녕하세요.
+
+          이번 주 건설업 사고 데이터 수집이 완료됐습니다.
+
+          📅 날짜: {date}
+          📊 수집 건수: {count}건
+
+          ✅ 지금 PPT를 생성하려면 Claude Code에 아래 문장을 입력하세요:
+          weekly 파이프라인 실행
+
+          (입력 전에 git pull 먼저 실행해 최신 데이터를 받으세요)
+
+          본 메일은 자동 발송됩니다.
+          """
+          msg = MIMEText(body)
+          msg["Subject"] = f"[건설안전] 주간 데이터 수집 완료 — {count}건"
+          msg["From"] = sender
+          msg["To"] = recipient
+          with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+              smtp.login(sender, password)
+              smtp.send_message(msg)
+          print("이메일 발송 완료")
+          EOF
