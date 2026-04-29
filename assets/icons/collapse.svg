@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- 건물 윤곽 (붕괴 전) -->
+  <rect x="20" y="20" width="60" height="55" rx="2" fill="none" stroke="#DD6B20" stroke-width="4"/>
+  <!-- 창문들 -->
+  <rect x="30" y="30" width="12" height="12" fill="#DD6B20" opacity="0.4"/>
+  <rect x="58" y="30" width="12" height="12" fill="#DD6B20" opacity="0.4"/>
+  <rect x="30" y="50" width="12" height="12" fill="#DD6B20" opacity="0.4"/>
+  <!-- 균열선 -->
+  <polyline points="50,20 45,38 55,52 48,65 52,75" fill="none" stroke="#DD6B20" stroke-width="3" stroke-dasharray="4,2"/>
+  <!-- 파편들 -->
+  <rect x="10" y="78" width="10" height="8" rx="1" fill="#DD6B20" opacity="0.6" transform="rotate(-20,15,82)"/>
+  <rect x="72" y="80" width="14" height="6" rx="1" fill="#DD6B20" opacity="0.6" transform="rotate(15,79,83)"/>
+  <!-- 낙하 화살표들 -->
+  <line x1="25" y1="92" x2="25" y2="80" stroke="#DD6B20" stroke-width="3"/>
+  <polygon points="20,82 25,76 30,82" fill="#DD6B20"/>
+  <line x1="75" y1="92" x2="75" y2="80" stroke="#DD6B20" stroke-width="3"/>
+  <polygon points="70,82 75,76 80,82" fill="#DD6B20"/>
+</svg>

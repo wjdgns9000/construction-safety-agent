@@ -1,0 +1,32 @@
+# 환경변수 (절대 커밋 금지)
+.env
+
+# 인증 파일 (절대 커밋 금지)
+credentials/
+
+# 출력 파일 (중간 산출물)
+output/raw/
+output/classified/
+output/analyzed/
+output/visualized/
+
+# PPT와 QA 결과는 30일 후 삭제 (커밋 불필요)
+output/pptx/
+output/qa/
+output/publish/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node.js
+node_modules/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

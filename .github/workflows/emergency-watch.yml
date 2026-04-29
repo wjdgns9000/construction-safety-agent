@@ -1,0 +1,55 @@
+name: 긴급 사고 감시 (30분 간격)
+
+on:
+  schedule:
+    # 30분마다 실행 (평일 00:30~15:30 UTC = KST 09:30~00:30)
+    - cron: '*/30 0-15 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 의존성 설치
+        run: pip install requests
+
+      - name: 날짜 설정
+        id: date
+        run: echo "value=$(date +%Y%m%d)" >> $GITHUB_OUTPUT
+
+      - name: Naver 긴급 수집
+        run: python scripts/collect_naver.py --mode emergency --date ${{ steps.date.outputs.value }}
+
+      - name: 신규 건수 확인
+        id: check
+        run: |
+          FILE="output/raw/${{ steps.date.outputs.value }}.json"
+          if [ ! -f "$FILE" ]; then echo "count=0" >> $GITHUB_OUTPUT; exit 0; fi
+          COUNT=$(python -c "import json; print(len(json.load(open('$FILE'))))")
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          echo "건수: $COUNT"
+
+      - name: 긴급 알림 발송
+        if: steps.check.outputs.count > 0
+        env:
+          GMAIL_SENDER: ${{ secrets.GMAIL_SENDER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_RECIPIENT: ${{ secrets.GMAIL_RECIPIENT }}
+        run: python scripts/notify_emergency.py output/raw/${{ steps.date.outputs.value }}.json
+
+      - name: 결과 커밋 & 푸시
+        if: steps.check.outputs.count > 0
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Actions"
+          git add output/raw/
+          git diff --staged --quiet || git commit -m "data: 긴급 수집 ${{ steps.date.outputs.value }} (${{ steps.check.outputs.count }}건)"
+          git push

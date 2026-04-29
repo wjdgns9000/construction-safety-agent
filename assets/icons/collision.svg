@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- 차량 1 (왼쪽 → 오른쪽) -->
+  <rect x="5" y="38" width="32" height="20" rx="4" fill="#3182CE"/>
+  <rect x="9" y="30" width="20" height="12" rx="3" fill="#3182CE"/>
+  <circle cx="14" cy="60" r="6" fill="#1A202C"/>
+  <circle cx="14" cy="60" r="3" fill="#A0AEC0"/>
+  <circle cx="30" cy="60" r="6" fill="#1A202C"/>
+  <circle cx="30" cy="60" r="3" fill="#A0AEC0"/>
+
+  <!-- 차량 2 (오른쪽 → 왼쪽) -->
+  <rect x="63" y="38" width="32" height="20" rx="4" fill="#3182CE"/>
+  <rect x="71" y="30" width="20" height="12" rx="3" fill="#3182CE"/>
+  <circle cx="70" cy="60" r="6" fill="#1A202C"/>
+  <circle cx="70" cy="60" r="3" fill="#A0AEC0"/>
+  <circle cx="86" cy="60" r="6" fill="#1A202C"/>
+  <circle cx="86" cy="60" r="3" fill="#A0AEC0"/>
+
+  <!-- 충돌 폭발 (중앙) -->
+  <circle cx="50" cy="45" r="8" fill="#FED7D7" stroke="#E53E3E" stroke-width="2"/>
+  <line x1="50" y1="28" x2="50" y2="20" stroke="#E53E3E" stroke-width="3" stroke-linecap="round"/>
+  <line x1="60" y1="32" x2="66" y2="26" stroke="#E53E3E" stroke-width="3" stroke-linecap="round"/>
+  <line x1="40" y1="32" x2="34" y2="26" stroke="#E53E3E" stroke-width="3" stroke-linecap="round"/>
+  <line x1="63" y1="42" x2="72" y2="40" stroke="#E53E3E" stroke-width="3" stroke-linecap="round"/>
+  <line x1="37" y1="42" x2="28" y2="40" stroke="#E53E3E" stroke-width="3" stroke-linecap="round"/>
+  <line x1="58" y1="54" x2="62" y2="62" stroke="#E53E3E" stroke-width="3" stroke-linecap="round"/>
+  <line x1="42" y1="54" x2="38" y2="62" stroke="#E53E3E" stroke-width="3" stroke-linecap="round"/>
+</svg>

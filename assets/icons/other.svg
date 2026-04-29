@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- 경고 삼각형 -->
+  <polygon points="50,8 5,90 95,90" fill="none" stroke="#718096" stroke-width="6" stroke-linejoin="round"/>
+  <!-- 느낌표 막대 -->
+  <rect x="45" y="32" width="10" height="32" rx="5" fill="#718096"/>
+  <!-- 느낌표 점 -->
+  <circle cx="50" cy="76" r="6" fill="#718096"/>
+</svg>

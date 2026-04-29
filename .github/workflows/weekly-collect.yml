@@ -1,0 +1,58 @@
+name: 주간 사고데이터 수집
+
+on:
+  schedule:
+    # 일요일 23:00 UTC = 월요일 08:00 KST
+    - cron: '0 23 * * 0'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: '날짜 (YYYYMMDD, 비어있으면 오늘)'
+        required: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 의존성 설치
+        run: pip install requests
+
+      - name: 날짜 설정
+        id: date
+        run: |
+          DATE="${{ github.event.inputs.date }}"
+          if [ -z "$DATE" ]; then DATE=$(date +%Y%m%d); fi
+          echo "value=$DATE" >> $GITHUB_OUTPUT
+
+      - name: KOSHA 수집
+        env:
+          KOSHA_API_KEY: ${{ secrets.KOSHA_API_KEY }}
+        run: python scripts/collect_kosha.py --mode weekly --date ${{ steps.date.outputs.value }}
+
+      - name: Naver 뉴스 수집
+        run: python scripts/collect_naver.py --mode weekly --date ${{ steps.date.outputs.value }}
+
+      - name: 수집 결과 확인
+        id: check
+        run: |
+          FILE="output/raw/${{ steps.date.outputs.value }}.json"
+          COUNT=$(python -c "import json; print(len(json.load(open('$FILE'))))")
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+          echo "수집 건수: $COUNT"
+
+      - name: 결과 커밋 & 푸시
+        if: steps.check.outputs.count > 0
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Actions"
+          git add output/raw/
+          git diff --staged --quiet || git commit -m "data: 주간 수집 ${{ steps.date.outputs.value }} (${{ steps.check.outputs.count }}건)"
+          git push
