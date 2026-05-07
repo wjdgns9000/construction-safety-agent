@@ -41,6 +41,9 @@ jobs:
         run: python scripts/collect_kosha.py --mode weekly --date ${{ steps.date.outputs.value }}
 
       - name: Naver 뉴스 수집
+        env:
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
         run: python scripts/collect_naver.py --mode weekly --date ${{ steps.date.outputs.value }}
 
       - name: 수집 결과 확인
