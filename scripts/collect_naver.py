@@ -1,16 +1,27 @@
+"""
+Naver 뉴스 검색 API로 건설 사고 뉴스 수집.
+
+API 키 발급: https://developers.naver.com/apps/#/register
+  - 애플리케이션 등록 → 검색 API 선택
+  - Client ID / Client Secret 발급 (무료, 하루 25,000건)
+
+환경변수:
+  NAVER_CLIENT_ID
+  NAVER_CLIENT_SECRET
+"""
 import argparse
 import json
 import os
+import re
 import time
 import uuid
-import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 
 import requests
 
-RSS_URL = "https://search.naver.com/rss.naver"
-QUERIES = ["건설 추락 사고", "건설 붕괴 사고", "건설 감전 사고", "건설 안전사고"]
+API_URL = "https://openapi.naver.com/v1/search/news.json"
+QUERIES = ["건설 추락 사고", "건설 붕괴 사고", "건설 감전 사고", "건설현장 안전사고"]
 MAX_RETRIES = 3
 RETRY_DELAY = 5
 
@@ -25,90 +36,45 @@ def parse_args():
 def get_cutoff(mode: str, date_str: str) -> datetime:
     base = datetime.strptime(date_str, "%Y%m%d")
     if mode == "weekly":
-        return base - timedelta(days=7)
+        return base - timedelta(days=30)
     elif mode == "monthly":
-        return base.replace(day=1)
+        return base - timedelta(days=60)
     else:
-        return base - timedelta(days=1)
+        return base - timedelta(days=7)
 
 
-def fetch_rss(query: str) -> list:
-    headers = {"User-Agent": "Mozilla/5.0"}
-    params = {"query": query}
+def fetch_news(query: str, client_id: str, client_secret: str) -> list:
+    headers = {
+        "X-Naver-Client-Id": client_id,
+        "X-Naver-Client-Secret": client_secret,
+    }
+    params = {"query": query, "display": 100, "sort": "date"}
     for attempt in range(1, MAX_RETRIES + 1):
         try:
-            resp = requests.get(RSS_URL, params=params, headers=headers, timeout=20)
+            resp = requests.get(API_URL, headers=headers, params=params, timeout=20)
             resp.raise_for_status()
-            return resp.text
+            return resp.json().get("items", [])
         except Exception as e:
             if attempt < MAX_RETRIES:
                 time.sleep(RETRY_DELAY)
             else:
-                print(f"[Naver] RSS 실패 ({query}): {e}")
-                return ""
-    return ""
-
-
-def parse_items(xml_text: str, cutoff: datetime) -> list:
-    if not xml_text:
-        return []
-    try:
-        root = ET.fromstring(xml_text)
-    except ET.ParseError:
-        return []
-
-    results = []
-    ns = {"dc": "http://purl.org/dc/elements/1.1/"}
-    for item in root.findall(".//item"):
-        title_el = item.find("title")
-        link_el = item.find("link")
-        desc_el = item.find("description")
-        pubdate_el = item.find("pubDate")
-
-        title = title_el.text if title_el is not None else ""
-        link = link_el.text if link_el is not None else ""
-        description = desc_el.text if desc_el is not None else ""
-        pub_date_str = pubdate_el.text if pubdate_el is not None else ""
-
-        # 날짜 파싱
-        try:
-            pub_dt = parsedate_to_datetime(pub_date_str).replace(tzinfo=None)
-        except Exception:
-            pub_dt = datetime.now()
-
-        if pub_dt < cutoff:
-            continue
-
-        # HTML 태그 제거
-        import re
-        clean_title = re.sub(r"<[^>]+>", "", title or "")
-        clean_desc = re.sub(r"<[^>]+>", "", description or "")
-
-        # 건설 관련 키워드 필터
-        text = clean_title + clean_desc
-        if not any(k in text for k in ["건설", "공사", "현장", "작업자", "근로자"]):
-            continue
-
-        results.append({
-            "board_no": f"NAVER_{uuid.uuid5(uuid.NAMESPACE_URL, link)}",
-            "accident_date": pub_dt.strftime("%Y-%m-%d"),
-            "location": "",
-            "business": "건설업",
-            "contents": clean_desc,
-            "keyword": clean_title,
-            "source": "NAVER_NEWS",
-            "source_url": link,
-            "collected_at": datetime.now().isoformat(),
-        })
-    return results
+                print(f"[Naver] API 실패 ({query}): {e}")
+                return []
+    return []
 
 
 def main():
     args = parse_args()
+    client_id = os.environ.get("NAVER_CLIENT_ID", "")
+    client_secret = os.environ.get("NAVER_CLIENT_SECRET", "")
+
+    if not client_id or not client_secret:
+        print("[Naver] API 키 없음 — 건너뜀 (NAVER_CLIENT_ID, NAVER_CLIENT_SECRET 미설정)")
+        return
+
     output_dir = os.path.join("output", "raw")
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f"{args.date}.json")
-
     cutoff = get_cutoff(args.mode, args.date)
 
     existing = []
@@ -119,12 +85,34 @@ def main():
 
     new_items = []
     for query in QUERIES:
-        xml_text = fetch_rss(query)
-        items = parse_items(xml_text, cutoff)
+        items = fetch_news(query, client_id, client_secret)
         for item in items:
-            if item["board_no"] not in existing_ids:
-                new_items.append(item)
-                existing_ids.add(item["board_no"])
+            try:
+                pub_dt = parsedate_to_datetime(item.get("pubDate", "")).replace(tzinfo=None)
+            except Exception:
+                pub_dt = datetime.now()
+            if pub_dt < cutoff:
+                continue
+            link = item.get("link") or item.get("originallink", "")
+            board_no = f"NAVER_{uuid.uuid5(uuid.NAMESPACE_URL, link)}"
+            if board_no in existing_ids:
+                continue
+            title = re.sub(r"<[^>]+>", "", item.get("title", ""))
+            desc  = re.sub(r"<[^>]+>", "", item.get("description", ""))
+            if not any(k in title + desc for k in ["건설", "공사", "현장", "작업자", "근로자"]):
+                continue
+            new_items.append({
+                "board_no": board_no,
+                "accident_date": pub_dt.strftime("%Y-%m-%d"),
+                "location": "",
+                "business": "건설업",
+                "contents": desc,
+                "keyword": title,
+                "source": "NAVER_NEWS",
+                "source_url": link,
+                "collected_at": datetime.now().isoformat(),
+            })
+            existing_ids.add(board_no)
 
     merged = existing + new_items
     with open(output_path, "w", encoding="utf-8") as f:

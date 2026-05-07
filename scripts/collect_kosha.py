@@ -23,11 +23,12 @@ def parse_args():
 def get_date_range(mode: str, date_str: str):
     base = datetime.strptime(date_str, "%Y%m%d")
     if mode == "weekly":
-        start = base - timedelta(days=7)
+        # KOSHA는 사고 발생 후 2~4주 뒤에 등록 → 30일 범위로 검색
+        start = base - timedelta(days=30)
     elif mode == "monthly":
-        start = base.replace(day=1)
+        start = base.replace(day=1) - timedelta(days=30)
     else:
-        start = base - timedelta(days=1)
+        start = base - timedelta(days=7)
     return start.strftime("%Y%m%d"), base.strftime("%Y%m%d")
 
 
