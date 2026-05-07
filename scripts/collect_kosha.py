@@ -124,13 +124,13 @@ def main():
     new_items = collect(args.mode, args.date)
     merged = existing + dedup(new_items, existing)
 
-    if not merged:
-        raise SystemExit("[KOSHA] 수집 결과 0건 — 파이프라인 중단")
-
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(merged, f, ensure_ascii=False, indent=2)
 
-    print(f"[KOSHA] 저장 완료: {output_path} ({len(merged)}건)")
+    if not merged:
+        print("[KOSHA] 수집 결과 0건 — Naver 수집으로 계속 진행")
+    else:
+        print(f"[KOSHA] 저장 완료: {output_path} ({len(merged)}건)")
 
 
 if __name__ == "__main__":
