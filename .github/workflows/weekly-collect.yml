@@ -59,7 +59,7 @@ jobs:
         run: |
           git config user.email "action@github.com"
           git config user.name "GitHub Actions"
-          git add output/raw/
+          git add -f output/raw/
           git diff --staged --quiet || git commit -m "data: 주간 수집 ${{ steps.date.outputs.value }} (${{ steps.check.outputs.count }}건)"
           git push
 
